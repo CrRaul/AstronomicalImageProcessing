@@ -1,4 +1,5 @@
 from processing import *
+from detection import *
 
 from tkinter import *
 from PIL import ImageTk, Image
@@ -21,6 +22,8 @@ class Window(Frame):
         Frame.__init__(self, master)   
 
         self.controller = Processing()
+        self.detection = Detection()
+
 
         self.fullImageL = None
         self.fullImageR = None
@@ -29,6 +32,9 @@ class Window(Frame):
         self.master = master
         self.panelA = None
         self.panelB = None
+        self.panelZ = None
+
+        self.valClickX = self.valClickY = None
 
         self.slider = []
         self.checkVal = []
@@ -44,6 +50,9 @@ class Window(Frame):
         if self.checkVal[1].get() == 1:
             a = self.slider[0].get()
             self.fullImageL = self.controller.binarizare(self.fullImageL,a)
+            self.fullImageR = self.fullImageL
+        if self.checkVal[2].get() == 1:
+            self.fullImageL = self.detection.detection(self.fullImageL)
             self.fullImageR = self.fullImageL
 
         print([x.get() for x in self.slider])
@@ -70,14 +79,11 @@ class Window(Frame):
     def updatePanelL(self):
         img = cv2.resize(self.fullImageL,(500,400))
 
-        b,g,r = cv2.split(img)
-        img = cv2.merge((r,g,b))
         im = Image.fromarray(img)      
         imgtk = ImageTk.PhotoImage(image = im)
         
         self.panelA = Label(self.master, image=imgtk)
         self.panelA.image = imgtk
-        #self.panelA.pack(side="left", padx=10, pady=10)
         self.panelA.place(x=300, y=100)
 
     # update the right panel with self.imageR 
@@ -85,21 +91,43 @@ class Window(Frame):
     def updatePanelR(self):
         img = cv2.resize(self.fullImageR,(500,400))
 
-        b,g,r = cv2.split(img)
-        img = cv2.merge((r,g,b))
         im = Image.fromarray(img)      
         imgtk = ImageTk.PhotoImage(image = im)
         
         self.panelB = Label(self.master, image=imgtk)
         self.panelB.image = imgtk
-        #self.panelB.pack(side="left", padx=10, pady=10)
         self.panelB.place(x=850, y=100)
+
+        # bind mouse events to window
+        self.panelB.bind( "<Button-1>", self.clickZoom)
+
+    def updatePanelZ(self):
+        img = cv2.resize(self.fullImageR,(500,400))
+        img =img[self.valClickY-25:self.valClickY+25, self.valClickX-25:self.valClickX+25,:]
+        img = cv2.resize(img,None,fx=2, fy=2, interpolation = cv2.INTER_CUBIC)
+
+        im = Image.fromarray(img)      
+        imgtk = ImageTk.PhotoImage(image = im)
+        
+        self.panelZ = Label(self.master, image=imgtk)
+        self.panelZ.image = imgtk
+        self.panelZ.place(x=1352, y=50)
+
 
     # swap self.imageL <-> self.imageR
     # to make quickly operation on imageR
     def swapImage(self):
         self.fullImageL = self.fullImageR
         self.updatePanelL()
+
+
+     # get postion of mouse click in imageL 
+    def clickZoom( self, event ):
+        self.valClickX = event.x
+        self.valClickY = event.y
+        print(self.valClickX, self.valClickY)
+        self.updatePanelZ()
+
 
     #Creation of init_window
     def init_window(self):
@@ -126,11 +154,14 @@ class Window(Frame):
         #Left Menu
         self.checkVal.append(IntVar())
         self.checkVal.append(IntVar())
+        self.checkVal.append(IntVar())
 
         ck1 = Checkbutton(self.master, text="BlackWhite", variable=self.checkVal[0])
         ck2 = Checkbutton(self.master, text="Binarizare", variable=self.checkVal[1])
+        ck3 = Checkbutton(self.master, text="Detection", variable=self.checkVal[2])
         ck1.place(x=20, y=40)
         ck2.place(x=20, y=80)
+        ck3.place(x=20, y=120)
 
         self.slider.append(Scale(self.master, from_=0, to=255, orient=HORIZONTAL))
         self.slider[0].set(36)
@@ -138,7 +169,7 @@ class Window(Frame):
 
 
         but = Button(self.master, text='Run', command=self.run)
-        but.place(x=20, y=120)
+        but.place(x=20, y=150)
 ######################################################     ^
     
 
