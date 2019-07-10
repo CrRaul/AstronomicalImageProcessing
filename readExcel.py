@@ -4,9 +4,16 @@
 import xlrd 
 
 class readExcel():
-	def __init__(selfl):
+	def __init__(self):
 		self.__excelData = None
 
+
+	def getData(self, pos):
+		return self.__excelData[pos]
+
+
+	def getLenData(self):
+		return len(self.__excelData)
 
 	# In: 
 	# Out:

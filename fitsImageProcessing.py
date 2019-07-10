@@ -9,6 +9,7 @@ from astropy.utils.data import get_pkg_data_filename
 import numpy as np
 from PIL import Image
 
+
 from astropy.stats import sigma_clipped_stats
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
@@ -20,6 +21,21 @@ class fitsImageProcessing():
 	def __init__(self):
 		self.__fitsImg = []
 		self.__starsDetection = []
+
+
+	# in:  
+	# out: 
+	# desc:
+	def getImage(self,pos):
+		return self.__fitsImg[pos]
+
+
+	# in:  
+	# out: 
+	# desc:
+	def getSourcesDetection(self,pos):
+		return self.__starsDetection[pos]
+
 
 	# In:   path - folder path; imageName - ["img1","img2"...]
 	# Out:  array with [nameImage, image data]
@@ -39,7 +55,9 @@ class fitsImageProcessing():
 			self.__fitsImg.append([im,data])
 
 
-
+	# in:  
+	# out: 
+	# desc:
 	def get8BitFitsData(self, pos):
 		data = self.__fitsImg[pos][1]
 
@@ -59,6 +77,17 @@ class fitsImageProcessing():
 		return data
 
 
+	# in:  
+	# out: 
+	# desc:
+	def showDrawLines(self, pos):
+		pass
+
+
+
+	# in:  
+	# out: 
+	# desc:
 	def showImage(self, pos):
 		data = self.get8BitFitsData(pos)
 
@@ -66,18 +95,22 @@ class fitsImageProcessing():
 		image = Image.fromarray(data, 'L')
 
 		plt.imshow(image)
+		plt.gray()
 		plt.show()
 
 
 
+	# in:  
+	# out: 
+	# desc:
 	def detection(self):
 
-		for data in self.__fitsImg:
-			data = data[1]
+		for data1 in self.__fitsImg:
+			data = data1[1]
 
 			#hdu = datasets.load_star_image()    
 			mean, median, std = sigma_clipped_stats(data, sigma=3.0)    
-			print((mean, median, std))    
+			#print((mean, median, std))    
 
 
 			from photutils import DAOStarFinder
@@ -86,10 +119,15 @@ class fitsImageProcessing():
 			for col in sources.colnames:    
 				sources[col].info.format = '%.8g'  # for consistent table output
 
+			sources.keep_columns(['xcentroid', 'ycentroid', "mag"])
+
 			self.__starsDetection.append(sources)
 
 
 
+	# in:  
+	# out: 
+	# desc:
 	def showDetection(self, pos):
 
 		data = self.get8BitFitsData(pos)
@@ -108,16 +146,17 @@ class fitsImageProcessing():
 		plt.show()
 
 
-
+	# in:  
+	# out: 
+	# desc:
 	def sortFilterFirstNmag(self, n):
 		for pos in range(0, len(self.__starsDetection)):
 			if len(self.__starsDetection[pos]) > n:
-				for i in range(0,len(self.__starsDetection[pos])-1):
-					for j in range(i+1,len(self.__starsDetection[pos])):
-						if self.__starsDetection[pos][i]['mag'] > self.__starsDetection[pos][j]['mag']:
-							self.__starsDetection[pos][[i, j]] = self.__starsDetection[pos][[j, i]]
+				self.__starsDetection[pos].sort(['mag'], reverse=True)
 				
-			self.__starsDetection[pos] = self.__starsDetection[pos][:n]
+				self.__starsDetection[pos] = self.__starsDetection[pos][:n]
+				print(self.__starsDetection[pos])
+
 
 
 
@@ -127,8 +166,6 @@ if __name__=="__main__":
 
 	fitImg.openImages("Res/Red_20160730_Feleac/Galileo/",["Galileo103B022.FIT"])
 
-	fitImg.showImage(0)
-
 	fitImg.detection()
-	fitImg.sortFilterFirstNmag(20)
+	fitImg.sortFilterFirstNmag(40)
 	fitImg.showDetection(0)
